@@ -85,7 +85,6 @@ if __name__ == "__main__":
     fp.close()
 
     size = 1
-    # TODO: s = 1
     while size <= s and candi_sets:
         if size > 1:
             candi_sets = permute_candi_sets(freq_set, size)

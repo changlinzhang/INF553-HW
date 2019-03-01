@@ -24,19 +24,19 @@ if __name__ == "__main__":
         return baskets, candi_sets
 
     def apriori(lines):
+        lines = list(lines)
         baskets = {}
         candi_sets = set()
         for line in lines:
-            item, basket = line.strip().split(',')
-            if baskets.has_key(basket):
-                items = baskets[basket]
-            else:
-                items = []
-            items.append(item)
-            baskets[basket] = items
-            candi_sets.add(item)
-        # print(baskets)
-        # print(candi_sets)
+            basket = line[0]
+            for i in range(0, len(line[1])):
+                candi_sets.add(line[1][i])
+                if baskets.has_key(basket):
+                    items = baskets[basket]
+                else:
+                    items = []
+                items.append(line[1][i])
+                baskets[basket] = items
 
         size = 1
         while size <= s and candi_sets:
@@ -44,10 +44,7 @@ if __name__ == "__main__":
                 candi_sets = permute_candi_sets(freq_set, size)
             freq_set = find_freq_set(thre, baskets, candi_sets)
             size += 1
-            # print(freq_set)
-            # print(candi_sets)
 
-        # return candi_sets, baskets
         return candi_sets
 
     def find_baskets(left_set):
@@ -70,8 +67,9 @@ if __name__ == "__main__":
 
     num_chunk = 2
 
+    lines = sc.textFile(sys.argv[1]).map(lambda l: l.split(',')).map(lambda x: [x[1], x[0]]).groupByKey().map(lambda x: (x[0], list(x[1])))
+    lines = lines.coalesce(num_chunk)
 
-    lines = sc.textFile(sys.argv[1], num_chunk)
     s = int(sys.argv[2])
     t = int(sys.argv[3])
     thre = t / num_chunk
@@ -80,9 +78,6 @@ if __name__ == "__main__":
 
     pass1_res = lines.mapPartitions(apriori)
 
-    # print("*************************")
-    # print(pass1_res.collect())
-    # print("*************************")
 
     local_candi_sets = pass1_res
     candis = local_candi_sets.map(pass2).filter(lambda x: len(x) > 0).collect()
