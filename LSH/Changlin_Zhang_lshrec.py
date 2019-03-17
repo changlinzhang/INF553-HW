@@ -37,7 +37,7 @@ def top5users((k, v), ori_users):
         i = k_set & candi_set
         u = k_set | candi_set
         j = len(i)/len(u)
-        pq.put((j, candi))
+        pq.put((-j, candi))
 
     num = 5
     top5_users = []
@@ -57,7 +57,7 @@ def top5users((k, v), ori_users):
 
     pq = PriorityQueue()
     for k, v in film_count.items():
-        pq.put((v, k))
+        pq.put((-v, k))
 
     num = 3
     top3_films = []
