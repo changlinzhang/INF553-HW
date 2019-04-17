@@ -3,6 +3,7 @@ import numpy as np
 import heapq
 # from Queue import PriorityQueue
 
+
 class Data:
     dim = 0
 
@@ -89,26 +90,29 @@ def cluster(samples, k):
     times = len(clusters) - k
     while times > 0:
         while True:
-            # d, u, v = heapq.heappop(pairs)
-            temp = heapq.heappop(pairs)
-            print(temp)
-            d, u, v = temp
+            d, u, v = heapq.heappop(pairs)
             if u in clusters_set and v in clusters_set:
                 break
         w = merge(u, v)
         times -= 1
         clusters_set.remove(u)
         clusters_set.remove(v)
+        for c in clusters_set:
+            d = cluster_dist(w, c)
+            heapq.heappush(pairs, [d, w, c])
         clusters_set.add(w)
-        for c in clusters:
-            if c in clusters_set:
-                d = cluster_dist(w, c)
-                heapq.heappush(pairs, [d, w, c])
     return clusters_set
 
 
 def initial2clusters(samples):
-    clusters = [Cluster(np.array([s]), np.array([s]), s) for s in samples]
+    clusters = []
+    for s in samples:
+        c = Cluster()
+        c.datas = np.append(c.datas, s)
+        c.centroid = s
+        p = c.shrink2centroid(s)
+        c.reps = np.append(c.reps, p)
+        clusters.append(c)
     return clusters
 
 
@@ -119,6 +123,15 @@ def cluster_dist(c1, c2):
             d = data_dist(p1, p2)
             if d < min_d:
                 min_d = d
+    return min_d
+
+
+def data2cluster_dist(data, c):
+    min_d = sys.float_info.max
+    for p in c.reps:
+        d = data_dist(data, p)
+        if d < min_d:
+            min_d = d
     return min_d
 
 
@@ -133,10 +146,12 @@ def pairwise_distance(clusters):
 
 def read_sample(sample_file):
     file = open(sample_file, 'r')
-    content = file.readlines()[0]
-    content = content[1:len(content)-1]
-    samples_indexs = content.split(',')
-    samples_indexs = [int(s) for s in samples_indexs]
+    content = file.readlines()
+    samples_indexs = [int(line) for line in content]
+    # content = file.readlines()[0]
+    # content = content[1:len(content)-1]
+    # samples_indexs = content.split(',')
+    # samples_indexs = [int(s) for s in samples_indexs]
     file.close()
     return samples_indexs
 
@@ -157,11 +172,60 @@ def read_dataset(dataset_file):
     return datas
 
 
+# def gene_test_file(dataset_file, samples_indexs):
+#     testf = open('test_input.txt', 'w')
+#     file = open(dataset_file, 'r')
+#     content = file.readlines()
+#     for i in samples_indexs:
+#         testf.write(content[i])
+#     testf.close()
+#     file.close()
+
+
+# def sort_cluster(clusters_list):
+#     # sort inner reps
+#     for c in clusters_list:
+#         c.reps.sort(key=lambda rep: rep.i)
+#     # sort clusters
+#     clusters_list.sort(key=lambda c: c.reps[0].i)
+
+
+def label_samples(clusters_list):
+    for i in range(len(clusters_list)):
+        for d in clusters_list[i].datas:
+            d.predict = i
+
+
+def predict(clusters_list, datas):
+    for i in range(len(datas)):
+        data = datas[i]
+        if not data.predict:
+            min_dist = sys.float_info.max
+            predict = -1
+            for i in range(len(clusters_list)):
+                c = clusters_list[i]
+                dist = data2cluster_dist(data, c)
+                if dist < min_dist:
+                    min_dist = dist
+                    predict = i
+            data.predict = predict
+            clusters_list[predict].datas = np.append(clusters_list[predict].datas, data)
+
+
 def sample(samples_indexs, datas):
     samples = []
     for i in samples_indexs:
         samples.append(datas[i])
     return samples
+
+
+def eval(clusters_list, datas):
+    truth_pairs = []
+    predict_pairs = []
+    intersection = set(truth_pairs) & set(predict_pairs)
+    precision = 1.0*len(intersection)/len(predict_pairs)
+    recall = .0*len(intersection)/len(truth_pairs)
+    return precision, recall
 
 
 if __name__ == "__main__":
@@ -178,4 +242,22 @@ if __name__ == "__main__":
     datas = read_dataset(dataset_file)
     samples = sample(samples_indexs, datas)
 
+    # gene_test_file(dataset_file, samples_indexs)
+
+    # output samples clustering results
+    file = open('output4.txt', 'w')
     clusters_set = cluster(samples, k)
+    clusters_list = (list(clusters_set))
+    # sort_cluster(clusters_list)
+    # label_samples(clusters_list)
+    print(len(clusters_set))
+    for c in clusters_set:
+        indexs = []
+        for d in c.datas:
+            indexs.append(d.i)
+        file.write(str(indexs)+'\n')
+    file.close()
+
+    # predict(clusters_list, datas)
+    # eval(clusters_list, datas)
+
