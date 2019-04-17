@@ -29,7 +29,12 @@ class Cluster:
         pp = Data()
         for i in range(Data.dim):
             f = p.features[i]
-            pp.features = f + alpha * (self.centroid.features[i] - f)
+            pp.features = np.append(pp.features, f + alpha * (self.centroid.features[i] - f))
+        # print("*******************")
+        # print(p.features)
+        # print(self.centroid.features)
+        # print(pp.features)
+        # print("*******************")
         return pp
 
 
@@ -64,11 +69,12 @@ def merge(u, v):
                 min_dist = data_dist(p, w.centroid)
             else:
                 dists = map(lambda q: data_dist(p, q), list(tmpSet))
+                # print(dists)
                 min_dist = min(dists)
             if min_dist >= max_dist:
                 max_dist = min_dist
                 max_data = p
-        tmpSet.add(p)
+        tmpSet.add(max_data)
 
     for p in tmpSet:
         pp = w.shrink2centroid(p)
@@ -80,7 +86,7 @@ def merge(u, v):
 def cluster(samples, k):
     clusters = initial2clusters(samples)
 
-    if clusters <= k:
+    if len(clusters) <= k:
         return clusters
 
     clusters_set = set(clusters)
@@ -98,7 +104,9 @@ def cluster(samples, k):
         clusters_set.remove(u)
         clusters_set.remove(v)
         for c in clusters_set:
-            d = cluster_dist(w, c)
+            d, min_pair = cluster_dist(w, c)
+            if len(w.datas) == 3 and len(c.datas) == 3:
+                print(min_pair)
             heapq.heappush(pairs, [d, w, c])
         clusters_set.add(w)
     return clusters_set
@@ -110,7 +118,9 @@ def initial2clusters(samples):
         c = Cluster()
         c.datas = np.append(c.datas, s)
         c.centroid = s
+        # print(s.features)
         p = c.shrink2centroid(s)
+        # print(p.features)
         c.reps = np.append(c.reps, p)
         clusters.append(c)
     return clusters
@@ -118,12 +128,14 @@ def initial2clusters(samples):
 
 def cluster_dist(c1, c2):
     min_d = sys.float_info.max
-    for p1 in c1.datas:
-        for p2 in c2.datas:
+    min_pair = None
+    for p1 in c1.reps:
+        for p2 in c2.reps:
             d = data_dist(p1, p2)
             if d < min_d:
                 min_d = d
-    return min_d
+                min_pair = (p1, p2)
+    return min_d, min_pair
 
 
 def data2cluster_dist(data, c):
@@ -139,7 +151,7 @@ def pairwise_distance(clusters):
     pairs = []
     for i in range(len(clusters)):
         for j in range(i+1, len(clusters)):
-            dist = cluster_dist(clusters[i], clusters[j])
+            dist, _ = cluster_dist(clusters[i], clusters[j])
             pairs.append([dist, clusters[i], clusters[j]])
     return pairs
 
@@ -245,7 +257,7 @@ if __name__ == "__main__":
     # gene_test_file(dataset_file, samples_indexs)
 
     # output samples clustering results
-    file = open('output4.txt', 'w')
+    file = open('output5.txt', 'w')
     clusters_set = cluster(samples, k)
     clusters_list = (list(clusters_set))
     # sort_cluster(clusters_list)
