@@ -50,7 +50,7 @@ if __name__ == "__main__":
     m_t = lines.map(lambda x: [x[0], [x[1], 1]])
     # print(m_t.collect())
 
-    f = open('output.txt', 'w')
+    f = open('output_hits.txt', 'w')
     h = np.array([i for i in range(1, num_node+1)]).transpose()
     h = sc.parallelize(h).map(lambda x: [x, 1])
     print(h.collect())
@@ -71,4 +71,5 @@ if __name__ == "__main__":
         f.write("\tHubs:\n")
         print_v(h.collect(), num_node, f)
 
+    f.close()
     spark.stop()
