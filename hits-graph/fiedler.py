@@ -5,18 +5,8 @@ from networkx.algorithms import *
 import sys
 import matplotlib.pyplot as plt
 
-if __name__ == "__main__":
 
-    G = nx.Graph()
-    with open(sys.argv[1]) as fp:
-        for node, line in enumerate(fp):
-            edge = line.strip().split()
-            G.add_edge(int(edge[0]), int(edge[1]))
-
-    G_list = []
-    k = int(sys.argv[2])
-
-    num_nodes = len(G)
+def divide(G, num_nodes):
     D = np.zeros((num_nodes, num_nodes))
     for key, value in G.degree():
         D[key-1][key-1] = value
@@ -27,28 +17,71 @@ if __name__ == "__main__":
         A[edge[1] - 1][edge[0] - 1] = 1
     # print(A)
     L = D - A
+    L = L[~np.all(L == 0, axis=0)]
+    idx = np.argwhere(np.all(L[..., :] == 0, axis=0))
+    L = np.delete(L, idx, axis=1)
     # print(L)
-    
+
     lambs, vectors = np.linalg.eig(L)
+
+    # print(lambs)
+    # print(vectors)
 
     min = sys.float_info.max
     min_i = -1
     for i in range(len(lambs)):
         lamb = lambs[i]
-        if lamb > 0 and lamb < min:
+        if lamb < min:
             min = lamb
             min_i = i
-    v2 = vectors[:,min_i]
-    print(v2)
+    second_min = sys.float_info.max
+    second_i = -1
+    for i in range(len(lambs)):
+        lamb = lambs[i]
+        if lamb > min and lamb < second_min:
+            second_min = lamb
+            second_i = i
+    v2 = vectors[:, second_i]
+    # print(v2)
     list_pos = []
     list_neg = []
-    for i in range(1, len(v2)+1):
-        if v2[i-1] > 0:
-            list_pos.append(i)
+    node_list = sorted(G.nodes())
+    for i in range(len(v2)):
+        if v2[i] > 0:
+            list_pos.append(node_list[i])
         else:
-            list_neg.append(i)
+            list_neg.append(node_list[i])
     G1 = G.subgraph(list_pos).copy()
     G2 = G.subgraph(list_neg).copy()
+    return G1, G2
+
+
+if __name__ == "__main__":
+
+    ori_G = nx.Graph()
+    with open(sys.argv[1]) as fp:
+        for node, line in enumerate(fp):
+            edge = line.strip().split()
+            ori_G.add_edge(int(edge[0]), int(edge[1]))
+
+    G_set = set()
+    G_set.add(ori_G)
+    k = int(sys.argv[2])
+
+    num_nodes = len(ori_G)
+
+    while len(G_set) < k:
+        max = -1
+        max_G = None
+        for G in G_set:
+            if len(G) > max:
+                max = len(G)
+                max_G = G
+        # print(len(max_G))
+        G_set.remove(max_G)
+        G1, G2 = divide(max_G, num_nodes)
+        G_set.add(G1)
+        G_set.add(G2)
 
     # nx.draw(G1)
     # plt.savefig("b1.png")
@@ -57,10 +90,10 @@ if __name__ == "__main__":
     # plt.savefig("b2.png")
     # plt.show()
 
-    # subGs = connected_component_subgraphs(G)
-    # fw = open('output_partition.txt', 'w')
-    # for subG in subGs:
-    #     nodes = [str(i) for i in subG.nodes()]
-    #     print(' '.join(nodes))
-    #     fw.write(' '.join(nodes) + '\n')
-    # fw.close()
+    fw = open('output_fiedler.txt', 'w')
+    G_list = sorted(list(G_set))
+    for G in G_list:
+        nodes = [str(i) for i in G.nodes()]
+        print(' '.join(nodes))
+        fw.write(' '.join(nodes) + '\n')
+    fw.close()
