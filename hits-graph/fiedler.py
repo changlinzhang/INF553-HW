@@ -7,41 +7,47 @@ import matplotlib.pyplot as plt
 
 
 def divide(G, num_nodes):
-    D = np.zeros((num_nodes, num_nodes))
-    for key, value in G.degree():
-        D[key-1][key-1] = value
-    # print(D)
-    A = np.zeros((num_nodes, num_nodes))
-    for edge in G.edges():
-        A[edge[0] - 1][edge[1] - 1] = 1
-        A[edge[1] - 1][edge[0] - 1] = 1
-    # print(A)
-    L = D - A
-    L = L[~np.all(L == 0, axis=0)]
-    idx = np.argwhere(np.all(L[..., :] == 0, axis=0))
-    L = np.delete(L, idx, axis=1)
+    # D = np.zeros((num_nodes, num_nodes))
+    # for key, value in G.degree():
+    #     D[key-1][key-1] = value
+    # # print(D)
+    # A = np.zeros((num_nodes, num_nodes))
+    # for edge in G.edges():
+    #     A[edge[0] - 1][edge[1] - 1] = 1
+    #     A[edge[1] - 1][edge[0] - 1] = 1
+    # # print(A)
+    # L = D - A
+    # L = L[~np.all(L == 0, axis=0)]
+    # idx = np.argwhere(np.all(L[..., :] == 0, axis=0))
+    # L = np.delete(L, idx, axis=1)
     # print(L)
-
-    lambs, vectors = np.linalg.eig(L)
-
+    #
+    # L = [[int(element) for element in row] for row in L]
+    # print(L)
+    #
+    # lambs, vectors = np.linalg.eig(L)
+    #
     # print(lambs)
     # print(vectors)
+    #
+    # min = sys.float_info.max
+    # min_i = -1
+    # for i in range(len(lambs)):
+    #     lamb = lambs[i]
+    #     if lamb < min:
+    #         min = lamb
+    #         min_i = i
+    # second_min = sys.float_info.max
+    # second_i = -1
+    # for i in range(len(lambs)):
+    #     lamb = lambs[i]
+    #     if lamb > min and lamb < second_min:
+    #         second_min = lamb
+    #         second_i = i
+    # v2 = vectors[:, second_i]
+    # print(v2)
 
-    min = sys.float_info.max
-    min_i = -1
-    for i in range(len(lambs)):
-        lamb = lambs[i]
-        if lamb < min:
-            min = lamb
-            min_i = i
-    second_min = sys.float_info.max
-    second_i = -1
-    for i in range(len(lambs)):
-        lamb = lambs[i]
-        if lamb > min and lamb < second_min:
-            second_min = lamb
-            second_i = i
-    v2 = vectors[:, second_i]
+    v2 = nx.fiedler_vector(G, normalized=True, seed=0)
     # print(v2)
     list_pos = []
     list_neg = []
@@ -53,6 +59,8 @@ def divide(G, num_nodes):
             list_neg.append(node_list[i])
     G1 = G.subgraph(list_pos).copy()
     G2 = G.subgraph(list_neg).copy()
+    # G1 = G.subgraph(list_pos)
+    # G2 = G.subgraph(list_neg)
     return G1, G2
 
 
@@ -83,15 +91,9 @@ if __name__ == "__main__":
         G_set.add(G1)
         G_set.add(G2)
 
-    # nx.draw(G1)
-    # plt.savefig("b1.png")
-    # plt.show()
-    # nx.draw(G2)
-    # plt.savefig("b2.png")
-    # plt.show()
-
     fw = open('output_fiedler.txt', 'w')
-    G_list = sorted(list(G_set))
+    G_list = list(G_set)
+    # G_list = sorted(list(G_set), key=lambda x: x.nodes())
     for G in G_list:
         nodes = [str(i) for i in G.nodes()]
         print(' '.join(nodes))
