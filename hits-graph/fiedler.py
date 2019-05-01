@@ -4,64 +4,78 @@ import numpy.linalg
 from networkx.algorithms import *
 import sys
 import matplotlib.pyplot as plt
+from math import e
 
 
 def divide(G, num_nodes):
-    # D = np.zeros((num_nodes, num_nodes))
-    # for key, value in G.degree():
-    #     D[key-1][key-1] = value
-    # # print(D)
-    # A = np.zeros((num_nodes, num_nodes))
-    # for edge in G.edges():
-    #     A[edge[0] - 1][edge[1] - 1] = 1
-    #     A[edge[1] - 1][edge[0] - 1] = 1
-    # # print(A)
-    # L = D - A
-    # L = L[~np.all(L == 0, axis=0)]
-    # idx = np.argwhere(np.all(L[..., :] == 0, axis=0))
-    # L = np.delete(L, idx, axis=1)
+    D = np.zeros((num_nodes, num_nodes))
+    for key, value in G.degree():
+        D[key-1][key-1] = value
+    # print(D)
+    A = np.zeros((num_nodes, num_nodes))
+    for edge in G.edges():
+        A[edge[0] - 1][edge[1] - 1] = 1
+        A[edge[1] - 1][edge[0] - 1] = 1
+    # print(A)
+    L = D - A
+    L = L[~np.all(L == 0, axis=0)]
+    idx = np.argwhere(np.all(L[..., :] == 0, axis=0))
+    L = np.delete(L, idx, axis=1)
     # print(L)
     #
     # L = [[int(element) for element in row] for row in L]
     # print(L)
-    #
-    # lambs, vectors = np.linalg.eig(L)
-    #
+
+    lambs, vectors = np.linalg.eig(L)
+
     # print(lambs)
     # print(vectors)
-    #
-    # min = sys.float_info.max
-    # min_i = -1
-    # for i in range(len(lambs)):
-    #     lamb = lambs[i]
-    #     if lamb < min:
-    #         min = lamb
-    #         min_i = i
-    # second_min = sys.float_info.max
-    # second_i = -1
-    # for i in range(len(lambs)):
-    #     lamb = lambs[i]
-    #     if lamb > min and lamb < second_min:
-    #         second_min = lamb
-    #         second_i = i
-    # v2 = vectors[:, second_i]
+
+    min = sys.float_info.max
+    min_i = -1
+    for i in range(len(lambs)):
+        lamb = lambs[i]
+        if lamb < min:
+            min = lamb
+            min_i = i
+    second_min = sys.float_info.max
+    second_i = -1
+    for i in range(len(lambs)):
+        lamb = lambs[i]
+        if lamb > min and lamb < second_min:
+            second_min = lamb
+            second_i = i
+    v2 = vectors[:, second_i]
     # print(v2)
 
-    v2 = nx.fiedler_vector(G, normalized=True, seed=0)
+    # v2 = nx.fiedler_vector(G, normalized=True, seed=0)
     # print(v2)
     list_pos = []
     list_neg = []
     node_list = sorted(G.nodes())
+    part = True
     for i in range(len(v2)):
-        if v2[i] > 0:
-            list_pos.append(node_list[i])
+        if abs(v2[i]) < e ** -15:
+            if part:
+                list_pos.append(node_list[i])
+            else:
+                list_neg.append(node_list[i])
+            part = not part
         else:
-            list_neg.append(node_list[i])
+            if v2[i] > 0:
+                list_pos.append(node_list[i])
+            else:
+                list_neg.append(node_list[i])
     G1 = G.subgraph(list_pos).copy()
     G2 = G.subgraph(list_neg).copy()
     # G1 = G.subgraph(list_pos)
     # G2 = G.subgraph(list_neg)
     return G1, G2
+
+
+def myComp(G):
+    for node in G.nodes():
+        return node
 
 
 if __name__ == "__main__":
@@ -93,7 +107,7 @@ if __name__ == "__main__":
 
     fw = open('output_fiedler.txt', 'w')
     G_list = list(G_set)
-    # G_list = sorted(list(G_set), key=lambda x: x.nodes())
+    G_list = sorted(G_list, key=myComp)
     for G in G_list:
         nodes = [str(i) for i in G.nodes()]
         print(' '.join(nodes))
